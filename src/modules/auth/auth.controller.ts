@@ -50,10 +50,11 @@ function issueTokens(res: Response, payload: { userId: string; role: string }) {
 
 // ── Captcha Helper ─────────────────────────────────────────────
 async function verifyCaptcha(token: string) {
-  if (process.env.NODE_ENV === "development" && !process.env.RECAPTCHA_SECRET_KEY) return true;
+  // Always bypass in development or if a real secret key is not provided (using the fallback or empty)
+  if (process.env.NODE_ENV === "development" || !process.env.RECAPTCHA_SECRET_KEY || process.env.RECAPTCHA_SECRET_KEY.includes("6LeIxAcTAAAAAGG-vF")) return true;
   if (!token) return false;
   try {
-    const secret = process.env.RECAPTCHA_SECRET_KEY || "6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe"; // Fallback to test secret if missing
+    const secret = process.env.RECAPTCHA_SECRET_KEY;
     const res = await axios.post<{ success: boolean }>(
       `https://www.google.com/recaptcha/api/siteverify?secret=${secret}&response=${token}`
     );
