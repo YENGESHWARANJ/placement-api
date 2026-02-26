@@ -7,6 +7,7 @@ exports.updateJob = exports.deleteJob = exports.getJobById = exports.getRecommen
 const axios_1 = __importDefault(require("axios"));
 const job_model_1 = __importDefault(require("./job.model"));
 const student_model_1 = __importDefault(require("../students/student.model"));
+const notice_model_1 = __importDefault(require("../notices/notice.model"));
 const env_config_1 = require("../../config/env.config");
 const activity_controller_1 = require("../activity/activity.controller");
 const createJob = async (req, res) => {
@@ -41,6 +42,23 @@ const createJob = async (req, res) => {
             deadline: finalDeadline,
         });
         await (0, activity_controller_1.logActivity)(userId, "Posted Job", `Posted new job: ${title} at ${company}`);
+        // Broadcast System Notice to all Students
+        await notice_model_1.default.create({
+            title: `New Opportunity: ${title}`,
+            content: `A new job opening at ${company} has just been posted. Log in to your dashboard to review the requirements and apply before the deadline.`,
+            type: "Student",
+            priority: "High",
+            createdBy: userId
+        });
+        // Fire Real-Time Socket Event
+        const io = req.app.get("io");
+        if (io) {
+            io.emit("global_notification", {
+                title: `New Job Posted!`,
+                message: `${title} at ${company}`,
+                type: "success"
+            });
+        }
         return res.status(201).json({
             message: "Job posted successfully",
             job,

@@ -31,12 +31,7 @@ const getAdminStats = async (req, res) => {
             },
             { $project: { name: "$_id", students: 1, placed: 1, _id: 0 } }
         ]);
-        const departmentStats = departmentAggregation.length > 0 ? departmentAggregation : [
-            { name: 'CSE', students: 120, placed: 95 },
-            { name: 'ECE', students: 100, placed: 70 },
-            { name: 'MECH', students: 80, placed: 35 },
-            { name: 'ISE', students: 60, placed: 52 },
-        ];
+        const departmentStats = departmentAggregation;
         // Readiness Index Logic
         const students = await student_model_1.default.find({}, 'aptitudeScore codingScore interviewScore');
         const avgAptitude = students.reduce((acc, s) => acc + (s.aptitudeScore || 0), 0) / (students.length || 1);
@@ -84,10 +79,7 @@ const getAdminStats = async (req, res) => {
             score: Math.round(((s.aptitudeScore || 0) + (s.codingScore || 0)) / 2)
         }))
             .slice(0, 5);
-        // Fallback mock if db is empty or students are performing too well
-        if (atRiskStudents.length === 0) {
-            atRiskStudents.push({ _id: 'mock1', name: 'Alex Johnson', issue: 'Inactive for 30 days', score: 42 }, { _id: 'mock2', name: 'Sarah Miller', issue: 'Failed Coding Assessment', score: 38 }, { _id: 'mock3', name: 'David Chen', issue: 'Low Apply Rate', score: 45 });
-        }
+        // Removed fallback mock for atRiskStudents
         return res.json({
             stats: {
                 totalStudents,
@@ -165,12 +157,10 @@ const getRecruiterStats = async (req, res) => {
             const monthIdx = d.getMonth() + 0; // 0-indexed for JS Date, 1-indexed for Mongo $month
             // Find stats for this month (Mongo returns 1-12)
             const stats = trendData.find(t => t._id === (monthIdx + 1)) || { applicants: 0, hires: 0 };
-            // If data is empty (likely in dev), add some mock variation for visualization
-            const isMock = trendData.length === 0;
             recruitmentTrends.push({
                 month: monthNames[monthIdx],
-                applicants: isMock ? Math.floor(Math.random() * 50) + 10 : stats.applicants,
-                hires: isMock ? Math.floor(Math.random() * 5) : stats.hires
+                applicants: stats.applicants,
+                hires: stats.hires
             });
         }
         // 🧬 LOGIC: Candidate Source (By Branch)
@@ -198,10 +188,7 @@ const getRecruiterStats = async (req, res) => {
             name: s._id || "Unknown",
             value: Math.round((s.count / totalApps) * 100)
         }));
-        // Fallback for empty data
-        if (candidateSource.length === 0) {
-            candidateSource.push({ name: 'CS Branch', value: 45 }, { name: 'IS Branch', value: 30 }, { name: 'EC Branch', value: 15 }, { name: 'Other', value: 10 });
-        }
+        // Removed fallback for empty candidateSource data
         return res.json({
             stats: {
                 totalJobs: myJobs.length,

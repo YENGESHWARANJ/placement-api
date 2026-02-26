@@ -12,6 +12,10 @@ const mongoose_1 = __importDefault(require("mongoose"));
 const morgan_1 = __importDefault(require("morgan"));
 const logger_1 = require("./utils/logger");
 const routes_1 = __importDefault(require("./routes"));
+const analytics_routes_1 = __importDefault(require("./modules/analytics/analytics.routes"));
+const notice_routes_1 = __importDefault(require("./modules/notices/notice.routes"));
+const activity_routes_1 = __importDefault(require("./modules/activity/activity.routes"));
+const alumni_routes_1 = __importDefault(require("./modules/alumni/alumni.routes"));
 const rateLimit_middleware_1 = require("./middleware/rateLimit.middleware");
 const error_middleware_1 = require("./middleware/error.middleware");
 const app = (0, express_1.default)();
@@ -53,6 +57,11 @@ app.use(express_1.default.urlencoded({ limit: '10mb', extended: true }));
 app.use((0, cookie_parser_1.default)());
 // ✅ Rate Limiting
 app.use("/api", rateLimit_middleware_1.apiRateLimiter);
+// API routes
+app.use("/api/analytics", analytics_routes_1.default);
+app.use("/api/notices", notice_routes_1.default);
+app.use("/api/activity", activity_routes_1.default);
+app.use("/api/alumni", alumni_routes_1.default);
 // ✅ Favicon fix
 app.get("/favicon.ico", (req, res) => res.status(204).end());
 // ✅ Root test route

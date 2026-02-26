@@ -9,10 +9,12 @@ exports.registerSchema = zod_1.z.object({
         .string()
         .min(6, "Password must be at least 6 characters"),
     role: zod_1.z.enum(["student", "recruiter", "admin"]).optional(),
+    captchaToken: zod_1.z.string().optional(),
 });
 exports.loginSchema = zod_1.z.object({
     email: zod_1.z.string().email("Invalid email format"),
     password: zod_1.z.string().min(1, "Password is required"),
+    captchaToken: zod_1.z.string().optional(),
 });
 exports.verifyOTPSchema = zod_1.z.object({
     email: zod_1.z.string().email("Invalid email format"),

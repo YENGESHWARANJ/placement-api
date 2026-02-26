@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.generateJob = exports.chatWithCopilot = exports.chatWithAI = exports.scanResumeAndRank = void 0;
+exports.replyVoiceInterview = exports.startVoiceInterview = exports.generateJob = exports.chatWithCopilot = exports.chatWithAI = exports.scanResumeAndRank = void 0;
 const axios_1 = __importDefault(require("axios"));
 const env_config_1 = require("../../config/env.config");
 const student_model_1 = __importDefault(require("../students/student.model"));
@@ -183,3 +183,61 @@ const generateJob = async (req, res) => {
     }
 };
 exports.generateJob = generateJob;
+const startVoiceInterview = async (req, res) => {
+    try {
+        const userId = req.user?.userId;
+        const student = await student_model_1.default.findOne({ userId });
+        const context = {
+            name: student?.name || "Candidate",
+            role: req.user?.role || "student",
+            skills: student?.skills || [],
+        };
+        const introMessage = `Hello ${context.name}. I am your AI Interviewer. I see you have skills in ${context.skills.join(', ') || 'various technologies'}. Are you ready to begin our technical interview?`;
+        return res.json({
+            success: true,
+            message: introMessage
+        });
+    }
+    catch (error) {
+        console.error("VOICE INTERVIEW START ERROR:", error);
+        return res.status(500).json({ message: "Failed to initialize interview" });
+    }
+};
+exports.startVoiceInterview = startVoiceInterview;
+const replyVoiceInterview = async (req, res) => {
+    try {
+        const { message, history } = req.body;
+        const userId = req.user?.userId;
+        if (!aiClient) {
+            throw new Error("GEMINI_API_KEY is missing or invalid on the server.");
+        }
+        const systemPrompt = `You are a strict but fair Technical AI Interviewer. 
+Your goal is to assess the candidate's technical skills based on their responses. 
+Keep your responses conversational, spoken-word friendly (no markdown, no code blocks, just plain text), and very brief (max 2-3 sentences).
+Ask one logical follow-up question per response. Validate their previous answer briefly before asking the next question.`;
+        const chatHistory = Array.isArray(history) ? history.map((h) => ({
+            role: h.role === 'ai' || h.role === 'model' ? 'model' : 'user',
+            parts: Array.isArray(h.parts) ? h.parts : [{ text: h.text || '' }]
+        })) : [];
+        const contents = [
+            { role: 'user', parts: [{ text: systemPrompt }] },
+            { role: 'model', parts: [{ text: "Understood. I will act as the oral technical interviewer." }] },
+            ...chatHistory,
+            { role: 'user', parts: [{ text: message }] }
+        ];
+        const response = await aiClient.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents
+        });
+        const reply = response.text?.replace(/[\*\#\`]/g, '') || "I didn't quite catch that. Could you elaborate?";
+        return res.json({
+            success: true,
+            reply
+        });
+    }
+    catch (error) {
+        console.error("VOICE INTERVIEW REPLY ERROR:", error);
+        return res.status(500).json({ message: "Failed to process interview response" });
+    }
+};
+exports.replyVoiceInterview = replyVoiceInterview;

@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getSecurityLogs = exports.changePassword = exports.getMe = exports.completeOnboarding = exports.resetPassword = exports.forgotPassword = exports.logout = exports.refreshToken = exports.googleLogin = exports.verifyOTP = exports.login = exports.register = void 0;
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const crypto_1 = __importDefault(require("crypto"));
+const axios_1 = __importDefault(require("axios"));
 const google_auth_library_1 = require("google-auth-library");
 const user_model_1 = __importDefault(require("../users/user.model"));
 const student_model_1 = __importDefault(require("../students/student.model"));
@@ -42,6 +43,22 @@ function issueTokens(res, payload) {
     });
     return accessToken;
 }
+// ── Captcha Helper ─────────────────────────────────────────────
+async function verifyCaptcha(token) {
+    if (process.env.NODE_ENV === "development" && !process.env.RECAPTCHA_SECRET_KEY)
+        return true;
+    if (!token)
+        return false;
+    try {
+        const secret = process.env.RECAPTCHA_SECRET_KEY || "6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe"; // Fallback to test secret if missing
+        const res = await axios_1.default.post(`https://www.google.com/recaptcha/api/siteverify?secret=${secret}&response=${token}`);
+        return res.data.success;
+    }
+    catch (err) {
+        console.error("Captcha error", err);
+        return false;
+    }
+}
 // ─────────────────────────────────────────────────────────────
 // REGISTER
 // ─────────────────────────────────────────────────────────────
@@ -54,7 +71,11 @@ const register = async (req, res) => {
                 errors: result.error.issues.map((e) => e.message),
             });
         }
-        const { name, email, password, role } = result.data;
+        const { name, email, password, role, captchaToken } = result.data;
+        const isHuman = await verifyCaptcha(captchaToken || "");
+        if (!isHuman) {
+            return res.status(400).json({ message: "Captcha verification failed. Please try again." });
+        }
         const existingUser = await user_model_1.default.findOne({ email });
         if (existingUser) {
             return res.status(400).json({ message: "An account with this email already exists. Please sign in." });
@@ -116,11 +137,17 @@ const login = async (req, res) => {
                 errors: result.error.issues.map((e) => e.message),
             });
         }
-        const { email, password } = result.data;
+        const { email, password, captchaToken } = result.data;
         const ip = req.headers["x-forwarded-for"]?.toString() || req.socket.remoteAddress || "Unknown";
         const user = await user_model_1.default.findOne({ email });
         if (!user) {
             return res.status(401).json({ message: "Invalid email or password." });
+        }
+        if (user.role !== "admin") {
+            const isHuman = await verifyCaptcha(captchaToken || "");
+            if (!isHuman) {
+                return res.status(400).json({ message: "Captcha verification failed. Please try again." });
+            }
         }
         // ── Account lock check ───────────────────────────────────
         if (user.accountLockedUntil && new Date() < user.accountLockedUntil) {

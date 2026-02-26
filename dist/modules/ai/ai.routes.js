@@ -16,4 +16,6 @@ router.post("/scan", auth_middleware_1.authMiddleware, upload.single("file"), ai
 router.post("/chat", auth_middleware_1.authMiddleware, ai_controller_1.chatWithAI);
 router.post("/copilot", auth_middleware_1.authMiddleware, ai_controller_1.chatWithCopilot);
 router.post("/generate-job", auth_middleware_1.authMiddleware, ai_controller_1.generateJob);
+router.post("/voice-interview/start", auth_middleware_1.authMiddleware, ai_controller_1.startVoiceInterview);
+router.post("/voice-interview/reply", auth_middleware_1.authMiddleware, ai_controller_1.replyVoiceInterview);
 exports.default = router;
