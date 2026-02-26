@@ -1,0 +1,13 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const drive_controller_1 = require("./drive.controller");
+const auth_middleware_1 = require("../../middleware/auth.middleware");
+const rbac_middleware_1 = require("../../middleware/rbac.middleware");
+const auth_types_1 = require("../auth/auth.types");
+const router = (0, express_1.Router)();
+router.post("/", auth_middleware_1.authMiddleware, (0, rbac_middleware_1.rbacMiddleware)([auth_types_1.UserRole.ADMIN, auth_types_1.UserRole.OFFICER]), drive_controller_1.createDrive);
+router.get("/", auth_middleware_1.authMiddleware, drive_controller_1.getAllDrives);
+router.put("/:id", auth_middleware_1.authMiddleware, (0, rbac_middleware_1.rbacMiddleware)([auth_types_1.UserRole.ADMIN, auth_types_1.UserRole.OFFICER]), drive_controller_1.updateDrive);
+router.delete("/:id", auth_middleware_1.authMiddleware, (0, rbac_middleware_1.rbacMiddleware)([auth_types_1.UserRole.ADMIN, auth_types_1.UserRole.OFFICER]), drive_controller_1.deleteDrive);
+exports.default = router;

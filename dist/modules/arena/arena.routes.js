@@ -1,0 +1,12 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const arena_controller_1 = require("./arena.controller");
+const auth_middleware_1 = require("../../middleware/auth.middleware");
+const router = (0, express_1.Router)();
+router.post("/experience", auth_middleware_1.authMiddleware, arena_controller_1.postExperience);
+router.get("/experience", auth_middleware_1.authMiddleware, arena_controller_1.getExperiences);
+router.post("/discussion", auth_middleware_1.authMiddleware, arena_controller_1.postDiscussion);
+router.get("/discussion", auth_middleware_1.authMiddleware, arena_controller_1.getDiscussions);
+router.post("/discussion/:id/reply", auth_middleware_1.authMiddleware, arena_controller_1.postReply);
+exports.default = router;
